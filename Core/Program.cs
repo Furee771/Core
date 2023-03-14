@@ -2,33 +2,31 @@ using Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var serviceConfig = builder.Configuration;
-builder.Services.Configure<FruitOptions>(serviceConfig.GetSection("Fruit"));
+builder.Services.AddDistributedMemoryCache();
+
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.IsEssential = true;
+});
 
 
 var app = builder.Build();
 
-app.Logger.LogDebug("Pipeline configuration starting");
+app.UseSession();
 
-
-app.MapGet("/config", async (HttpContext context, IConfiguration config) =>
+app.MapGet("/session", async context =>
 {
-    string defaultDebug = config["Logging:LogLevel:Default"];
-    await context.Response.WriteAsync(defaultDebug);
+    int counter = (context.Session.GetInt32("counter") ?? 0) + 1;
 
-    string environment = config["ASPNETCORE_ENVIRONMENT"];
-    await context.Response.WriteAsync(environment);
+    context.Session.SetInt32("counter", counter);
 
-    if (app.Environment.IsDevelopment())
-    {
-        await context.Response.WriteAsync("IsDevelopment");
-    }
+    await context.Session.CommitAsync();
+
+    await context.Response.WriteAsync($"Session: {counter}");
+
 });
 
-app.UseMiddleware<FruitMiddleware>();
-
 app.MapGet("/", () => "Hello Wrold!");
-
-app.UseStaticFiles();
 
 app.Run();
