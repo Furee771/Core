@@ -1,15 +1,15 @@
-using Core;
+using Core.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var app = builder.Build();
-
-app.MapGet("/https", async context =>
+builder.Services.AddDbContext<DataContext>(options =>
 {
-    await context.Response.WriteAsync($"HTTPS Request: {context.Request.IsHttps}");
+    options.UseSqlServer(builder.Configuration["ConnectionStrings:DbConnection"]);
 });
 
-app.UseHttpsRedirection();
+var app = builder.Build();
+
 
 app.MapGet("/", () => "Hello Wrold!");
 
