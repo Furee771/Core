@@ -13,7 +13,7 @@ builder.Services.AddDbContext<DataContext>(options =>
 
 var app = builder.Build();
  
-const string BASEURL = "/api/products";
+app.MapControllers();
 
 app.MapGet($"{BASEURL}/{{id}}", async (HttpContext context, DataContext data) =>
 {
