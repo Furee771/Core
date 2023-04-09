@@ -11,49 +11,12 @@ builder.Services.AddDbContext<DataContext>(options =>
     options.UseSqlServer(builder.Configuration["ConnectionStrings:DbConnection"]);
 });
 
+builder.Services.AddControllers();
+
 var app = builder.Build();
- 
-const string BASEURL = "/api/products";
 
-app.MapGet($"{BASEURL}/{{id}}", async (HttpContext context, DataContext data) =>
-{
-    string id = context.Request.RouteValues["id"] as string;
+app.MapControllers();
 
-    if(id != null)
-    {
-        Product product = data.Products.Find(long.Parse(id));
-        if(product == null)
-        {
-            context.Response.StatusCode = StatusCodes.Status404NotFound;
-        }
-        else
-        {
-            context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync(JsonSerializer.Serialize<Product>(product));
-        }
-    }
-});
-
-app.MapGet(BASEURL, async (HttpContext context, DataContext data) =>
-{
-    context.Response.ContentType = "application/json";
-    await context.Response.WriteAsync(JsonSerializer.Serialize<IEnumerable<Product>>(data.Products));
-});
-
-app.MapPost(BASEURL, async (HttpContext context, DataContext data) =>
-{
-    Product product = await JsonSerializer.DeserializeAsync<Product>(context.Request.Body);
-
-    context.Response.ContentType = "application/json";
-    await context.Response.WriteAsync(JsonSerializer.Serialize<IEnumerable<Product>>(data.Products));
-
-    if(product != null)
-    {
-        await data.AddAsync(product);
-        await data.SaveChangesAsync();
-        context.Response.StatusCode = StatusCodes.Status200OK;
-    }
-});
 
 var context = app.Services.CreateScope().ServiceProvider.GetRequiredService<DataContext>();
 SteedData.SteedDatabase(context);
