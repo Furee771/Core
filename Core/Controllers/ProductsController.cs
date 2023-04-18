@@ -16,25 +16,37 @@ namespace Core.Controllers
 
         //api/products
         [HttpGet]
-        public IEnumerable<Product> GetProducts()
+        public IAsyncEnumerable<Product> GetProducts()
         {
-            return _context.Products;
+            return _context.Products.AsAsyncEnumerable();
 
         }
-        //api/products/1
+        //api/products/1 
         [HttpGet("{id}")]
-        public Product GetProduct(long id,[FromServices] ILogger<ProductsController> logger)
-        {
-            logger.LogDebug("---------------GetProduct Action Invoked------------------------");
-            return _context.Products.Find(id);
+        public async Task <IActionResult> GetProduct(long id)
+        { 
+            Product product = await _context.Products.FindAsync(id);
+
+            if(product == null)
+            {
+                return NotFound();
+            }
+            return Ok(product);
         }
 
         //api/products
         [HttpPost]
-        public void SaveProduct([FromBody]Product product)
+        public async Task <IActionResult> SaveProduct([FromBody]Product product)
         {
-            _context.Products.Add(product);
-            _context.SaveChanges();
+           if(ModelState.IsValid)
+           {
+                await _context.Products.AddAsync(product);
+                await _context.SaveChangesAsync();
+
+                return Ok(product);
+           }
+
+           return BadRequest(ModelState);
         }
 
         //api/products
@@ -45,12 +57,26 @@ namespace Core.Controllers
             _context.SaveChanges();
         }
 
-        //api/product1
+        //api/products/1
         [HttpDelete("{id}")]
         public void DeleteProduct(long id)
         {
             _context.Products.Remove(new Product { Id = id });
             _context.SaveChanges();
+        }
+
+        //api/products/redirect
+        [HttpGet("{redirect}")]
+        public IActionResult Redirect()
+        {
+            //return Redirect("api/products/1");
+            //return RedirectToAction(nameof(GetProduct), new { Id = 1 });
+            return RedirectToRoute(new
+            {
+                controller = "Products",
+                action = "GetProducts",
+                Id = 1
+            });
         }
     }
 }
